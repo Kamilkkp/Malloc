@@ -507,6 +507,25 @@ void *realloc(void *old_ptr, size_t size) {
 
   word_t *next_block = bt_next(current_block);
   /* Sprawdzamy czy po bieżącym bloku występuje kolejny, wolny */
+  /* Jeśli suma rozmiaru obecnego i kolejnego bloku jest mniejsza od wymaganego
+   * rozmiaru oraz jeśli następny blok jest ostatnim na stercie, wtedy łączymy
+   * te dwa bloki, przydzielamy brakujące miejsce za pomocą morecore a następnie
+   * znów łączymy*/
+  if (next_block != NULL && bt_free(next_block) &&
+      size_curr_block + bt_size(next_block) < reqsize && next_block == last) {
+    set_free_block_from_segregated_list_as_used(next_block);
+    current_block = coalesce(current_block, next_block, true);
+
+    size_t size_new_block = reqsize - size_curr_block - bt_size(next_block);
+    word_t *new_block = morecore(size_new_block);
+    if (new_block == NULL)
+      return NULL;
+    last = new_block;
+    set_header(new_block, size_new_block, true);
+    coalesce(current_block, new_block, true);
+    return old_ptr;
+  }
+  /* Sprawdzamy czy po bieżącym bloku występuje kolejny, wolny */
   /* Jeśli suma rozmiaru obecnego i kolejnego bloku jest wieksza od wymaganego
    * rozmiaru, wtedy łączymy te dwa bloki a następnie dzielimy je w odpowiedni
    * sposób*/
