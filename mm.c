@@ -341,15 +341,13 @@ static inline word_t *take_free_block_from_class(word_t *class, size_t size) {
   while (true) {
     if (block != NULL && bt_size(block) == size) {
       /*  Jeśli znaleziony blok jest dokładnie wymaganych rozmiarów, zwalnia go
-       * z list wolnych bloków oraz ustawia jako używany za pomocą
-       * set_free_block_from_segregated_list_as_used  */
+       * z list wolnych bloków oraz ustawia jako używany  */
       set_free_block_from_segregated_list_as_used(block);
       return block;
     }
     if (block != NULL && bt_size(block) > size) {
-      /* Jeśli jrest większy niż znaleziony to ustawia dany blok za pomocą
-       * set_free_block_from_segregated_list_as_used, a następnie uruchamia na
-       * nim split*/
+      /* Jeśli jest większy niż znaleziony to ustawia dany blok jako używany, a
+       * następnie uruchamia na nim split*/
       set_free_block_from_segregated_list_as_used(block);
       return split(block, size);
     } else if (block != NULL)
@@ -418,41 +416,44 @@ void *malloc(size_t size) {
     return NULL;
   word_t *block = NULL;
   size = round_up(sizeof(word_t) + size);
-  if ((last == NULL) ||
-      (block = take_free_block_from_segregated_list(size)) == NULL) {
-    if (last == NULL || bt_used(last)) { /* jeśli ostatni blok jest zajęty to
-                                            alokujemy pamięć na nowy blok */
-      block = morecore(size);
-      if (block == NULL)
-        return NULL;
-      if (heap_start == NULL)
-        heap_start = block;
-      last = block;
-      set_header(block, size, true);
-    } else { /*  ostatni blok jest wolny i romiaru większego - uruchamiamy split
-                na nim i zwracmy blok użytkownikowi */
-      size_t size_last = bt_size(last);
-      if (size_last > size) {
-        set_free_block_from_segregated_list_as_used(last);
-        block = split(last, size);
-      } else if (size_last == size) { /* jeśli ostatni blok jest równy i wolny
-                                         od szukanego, rejestrujemy jesgo użycie
-                                         i zwracamy użytkownikowi */
-        set_free_block_from_segregated_list_as_used(last);
-        block = last;
-      } else { /* jeśli ostatni blok jest wolny, ale za mały, wywołujemy metode
-                  morecore, następnie łączymy dane dwa bloki w jeden */
-        size_t size_new_block = size - size_last;
-        block = morecore(size_new_block);
-        if (block == NULL)
-          return NULL;
-        set_free_block_from_segregated_list_as_used(last);
-        word_t *last_block = last;
-        last = block;
-        set_header(block, size_new_block, true);
-        block = coalesce(last_block, block, true);
-      }
-    }
+  if (last != NULL) {
+    block = take_free_block_from_segregated_list(size);
+    if (block)
+      return bt_payload(block);
+  }
+  if (last == NULL ||
+      bt_used(last)) { /* jeśli ostatni blok jest zajęty(lub jest to pierwsze
+                          wywołanie malloca) to alokujemy pamięć na nowy blok */
+    block = morecore(size);
+    if (block == NULL)
+      return NULL;
+    if (heap_start == NULL)
+      heap_start = block;
+    last = block;
+    set_header(block, size, true);
+    return bt_payload(block);
+  }
+  size_t size_last = bt_size(last);
+  if (size_last > size) { /*  ostatni blok jest wolny i romiaru większego -
+             uruchamiamy split na nim i zwracmy blok użytkownikowi */
+    set_free_block_from_segregated_list_as_used(last);
+    block = split(last, size);
+  } else if (size_last == size) { /* jeśli ostatni blok jest równy i wolny
+                                      od szukanego, rejestrujemy jesgo użycie
+                                      i zwracamy użytkownikowi */
+    set_free_block_from_segregated_list_as_used(last);
+    block = last;
+  } else { /* jeśli ostatni blok jest wolny, ale za mały, wywołujemy metode
+              morecore, następnie łączymy dane dwa bloki w jeden */
+    size_t size_new_block = size - size_last;
+    block = morecore(size_new_block);
+    if (block == NULL)
+      return NULL;
+    set_free_block_from_segregated_list_as_used(last);
+    word_t *last_block = last;
+    last = block;
+    set_header(block, size_new_block, true);
+    block = coalesce(last_block, block, true);
   }
   return bt_payload(block);
 }
