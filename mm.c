@@ -145,6 +145,11 @@ static inline word_t *bt_prev(word_t *bt) {
 static inline size_t round_up(size_t size) {
   return (size + ALIGNMENT - 1) & -ALIGNMENT;
 }
+/* Calculates block size incl. header, footer & payload,
+ * and aligns it to block boundary (ALIGNMENT). */
+static inline size_t blksz(size_t size) {
+  return round_up(sizeof(word_t) + size);
+}
 static inline void set_header(word_t *block, size_t size, bool is_allocated) {
   *block = size | is_allocated;
 }
@@ -415,7 +420,7 @@ void *malloc(size_t size) {
   if (size == 0)
     return NULL;
   word_t *block = NULL;
-  size = round_up(sizeof(word_t) + size);
+  size = blksz(size);
   if (last != NULL) {
     block = take_free_block_from_segregated_list(size);
     if (block)
@@ -494,7 +499,7 @@ void *realloc(void *old_ptr, size_t size) {
 
   word_t *current_block = bt_fromptr(old_ptr);
   size_t size_curr_block = bt_size(current_block);
-  size_t reqsize = round_up(size + sizeof(word_t));
+  size_t reqsize = blksz(size);
 
   if (reqsize == size_curr_block)
     return old_ptr;
