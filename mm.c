@@ -507,24 +507,24 @@ void *realloc(void *old_ptr, size_t size) {
 
   word_t *next_block = bt_next(current_block);
   /* Sprawdzamy czy po bieżącym bloku występuje kolejny, wolny */
-  if (next_block != NULL && bt_free(next_block)) {
-    size_t size_next_block = bt_size(next_block);
-    /* Jeśli suma rozmiaru obecnego i kolejnego bloku jest wieksza od wymaganego
-     * rozmiaru, wtedy łączymy te dwa bloki a następnie dzielimy je w odpowiedni
-     * sposób*/
-    if (size_curr_block + size_next_block > reqsize) {
-      set_free_block_from_segregated_list_as_used(next_block);
-      current_block = coalesce(current_block, next_block, true);
-      split(current_block, reqsize);
-      return old_ptr;
-    }
-    /* jeśli suma rozmiarów bloków jest równa wymaganamu, wtedy po prostu obydwa
-       bloki łaćzymy ze sobą*/
-    else if (size_curr_block + size_next_block == reqsize) {
-      set_free_block_from_segregated_list_as_used(next_block);
-      coalesce(current_block, next_block, true);
-      return old_ptr;
-    }
+  /* Jeśli suma rozmiaru obecnego i kolejnego bloku jest wieksza od wymaganego
+   * rozmiaru, wtedy łączymy te dwa bloki a następnie dzielimy je w odpowiedni
+   * sposób*/
+  if (next_block != NULL && bt_free(next_block) &&
+      size_curr_block + bt_size(next_block) > reqsize) {
+    set_free_block_from_segregated_list_as_used(next_block);
+    current_block = coalesce(current_block, next_block, true);
+    split(current_block, reqsize);
+    return old_ptr;
+  }
+  /* Sprawdzamy czy po bieżącym bloku występuje kolejny, wolny */
+  /* jeśli suma rozmiarów bloków jest równa wymaganamu, wtedy po prostu obydwa
+      bloki łaćzymy ze sobą*/
+  else if (next_block != NULL && bt_free(next_block) &&
+           size_curr_block + bt_size(next_block) == reqsize) {
+    set_free_block_from_segregated_list_as_used(next_block);
+    coalesce(current_block, next_block, true);
+    return old_ptr;
   }
   /* Jesli bieżący blok jest ostatni, wtedy uruchamiamy memcore w celu
      przydzielenia brakującego miejsca, inicjujujemy nowy blok, następnie
