@@ -529,8 +529,8 @@ void *realloc(void *old_ptr, size_t size) {
   /* Jeśli suma rozmiaru obecnego i kolejnego bloku jest wieksza od wymaganego
    * rozmiaru, wtedy łączymy te dwa bloki a następnie dzielimy je w odpowiedni
    * sposób*/
-  if (next_block != NULL && bt_free(next_block) &&
-      size_curr_block + bt_size(next_block) > reqsize) {
+  else if (next_block != NULL && bt_free(next_block) &&
+           size_curr_block + bt_size(next_block) > reqsize) {
     set_free_block_from_segregated_list_as_used(next_block);
     current_block = coalesce(current_block, next_block, true);
     split(current_block, reqsize);
