@@ -516,7 +516,7 @@ void *realloc(void *old_ptr, size_t size) {
     set_free_block_from_segregated_list_as_used(next_block);
     current_block = coalesce(current_block, next_block, true);
 
-    size_t size_new_block = reqsize - size_curr_block - bt_size(next_block);
+    size_t size_new_block = reqsize - bt_size(current_block);
     word_t *new_block = morecore(size_new_block);
     if (new_block == NULL)
       return NULL;
