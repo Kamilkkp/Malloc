@@ -101,7 +101,7 @@ static inline int bt_free(word_t *bt) {
 }
 /* Given boundary tag address calculate it's buddy address. */
 static inline word_t *bt_footer(word_t *bt) {
-  return (word_t *)((void *)bt + bt_size(bt) - sizeof(word_t));
+  return (void *)bt + bt_size(bt) - sizeof(word_t);
 }
 /* Given payload pointer returns an address of boundary tag. */
 static inline word_t *bt_fromptr(void *ptr) {
@@ -158,10 +158,10 @@ static inline word_t *set_class_to_get_free_block(size_t size) {
   size_t size_class = 16;
   for (int i = 0; i < classes; i++) {
     if (size_class >= size)
-      return (void *)segregated_list + i * sizeof(word_t);
+      return (word_t *)segregated_list + i;
     size_class *= 2;
   }
-  return (void *)segregated_list + (classes - 1) * sizeof(word_t);
+  return (word_t *)segregated_list + (classes - 1);
 }
 /* Przechodzimy do klasy wyższej, która wskazuje na pierwszy
  * element z listy klasy wyższej lub null jesli pusta  */
@@ -206,25 +206,27 @@ static inline void set_prev_free_block(word_t *block, word_t *prev_free_block) {
 }
 /* Pobiera wskaznik na następny wolny blok z klasy względem bieżacego bloku */
 static inline word_t *get_next_free_block(word_t *block) {
-  if (*(block + 2) == -1)
+  word_t relative_adress = *(block + 2);
+  if (relative_adress == -1)
     return NULL;
   else
-    return (word_t *)((unsigned long)*(block + 2) + heap_start);
+    return (unsigned long)relative_adress + heap_start;
 }
 /* Pobiera wskaznik na poprzedni wolny blok z klasy względem bieżacego bloku */
 static inline word_t *get_prev_free_block(word_t *block) {
-  if (*((word_t *)block + 1) == -1)
+  word_t relative_adress = *(block + 1);
+  if (relative_adress == -1)
     return NULL;
   else
-    return (word_t *)((unsigned long)*(block + 1) + heap_start);
+    return (unsigned long)relative_adress + heap_start;
 }
 /* Pobiera pierwszy wolny blok z danej klasy */
 static inline word_t *get_first_free_block_from_class(word_t *class) {
-  word_t addr = *class;
-  if (addr == -1)
+  word_t relative_adress = *class;
+  if (relative_adress == -1)
     return NULL;
   else
-    return heap_start + (unsigned long)addr;
+    return heap_start + (unsigned long)relative_adress;
 }
 /* Wkłada wolny blok do określonej za pomocą set_class_to_insert_free_block
  * klasy w porządku rosnącym względem rozmiaru */
