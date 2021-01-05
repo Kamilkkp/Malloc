@@ -88,7 +88,7 @@ static word_t *heap_start;      /* Address of the first block */
 static word_t *last;            /* Points at last block */
 
 /* --=[ boundary tag handling ]=-------------------------------------------- */
-static inline word_t bt_size(word_t *bt) {
+static inline size_t bt_size(word_t *bt) {
   return *bt & ~(USED | PREVFREE);
 }
 /* zwraca informacje czy dany blok jest używany */
@@ -608,7 +608,7 @@ static inline void list_the_contents_of_the_heap() {
   printf("list of all blocks:\n");
   word_t *block = heap_start;
   while (block != NULL) {
-    printf("used?=%d, prev-free?=%d, Block_size=%d, addres=%p\n",
+    printf("used?=%d, prev-free?=%d, Block_size=%ld, addres=%p\n",
            bt_used(block), bt_get_prevfree(block), bt_size(block), block);
     block = bt_next(block);
   }
@@ -617,7 +617,7 @@ static inline void list_the_contents_of_the_heap() {
   block = get_first_free_block_from_class(class);
   while (true) {
     if (block != NULL) {
-      printf("Block_size=%d, addres=%p\n", bt_size(block), block);
+      printf("Block_size=%ld, addres=%p\n", bt_size(block), block);
       block = get_next_free_block(block);
     } else if (block != NULL)
       block = get_next_free_block(block);
