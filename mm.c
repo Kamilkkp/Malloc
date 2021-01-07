@@ -260,7 +260,7 @@ static inline void insert_free_block_to_segregated_list(word_t *block) {
     set_next_free_block(curr_block, block);
   }
 }
-/* Zwraca pierwszy wolny blok z danej klasy oraz go usuwa z niej */
+/* Zwraca pierwszy wolny blok z danej klasy oraz go usuwa z niej. */
 static inline word_t *pop_free_block_from_class(word_t *class) {
   word_t *first_free_block_from_class = get_first_free_block_from_class(class);
   if (first_free_block_from_class != NULL) {
