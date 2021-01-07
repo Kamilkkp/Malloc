@@ -597,7 +597,8 @@ void *calloc(size_t nmemb, size_t size) {
   return new_ptr;
 }
 
-/* Sprawdza czy blok znaduje sie w klasie(docelowej) wolnych bloków */
+/* Sprawdza czy blok znaduje sie w klasie(docelowej) wolnych bloków. Ta
+ * procedura została stworzona tylko na potrzebę działania mm_checkheap */
 static inline word_t *find_in_segregated_list(word_t *block) {
   word_t *class = set_class_to_insert_free_block(block);
   word_t *found_block = get_first_free_block_from_class(class);
@@ -610,7 +611,8 @@ static inline word_t *find_in_segregated_list(word_t *block) {
       return NULL;
   }
 }
-/* Wypisuje stan menadżera pamięci */
+/* Wypisuje stan menadżera pamięci. Ta procedura została stworzona tylko na
+ * potrzebę działania mm_checkheap. */
 static inline void list_the_contents_of_the_heap() {
   printf("list of all blocks:\n");
   word_t *block = heap_start;
