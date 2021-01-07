@@ -20,13 +20,13 @@
  * -zawiera na początku header zajmujący 4 bajty, w którym
  * jest zapisany rozmiar danego bloku, 0 na pierwszym bicie(w pierwszym bicie
  * jest przechowywana informacja czy blok jest zajęty(1) czy wolny(0)) -po
- * headerze jest umiejscowiony względny wskaźnik(wartość odległość względem
- * heap_start(adres pierwszego bloku)) zajmujący 4 bajty do poprzedniego wolnego
- * bloku z danej klasy, jeśli takiego nie ma to jest zapisana tam wartość -1
- * (taki odpowiednik NULL) -następnie, jest umiejscowiony względny
- * wskaźnik do następnego wolnego bloku z danej klasy, jeśli takiego
- * nie ma to jest zapisana tam wartość -1 -ostatnie 4
- * bajty danego bloku są przeznaczone na footer(drugi nagłówek)
+ * headerze jest umiejscowiony względny wskaźnik( odległość względem
+ * obecnego bloku a poprzednim wolnym blokiem wyrażona w wielkości słowa word_t)
+ * zajmujący 4 bajty do poprzedniego wolnego bloku z danej klasy, jeśli takiego
+ * nie ma to jest zapisana tam wartość 0 (taki odpowiednik NULL) -następnie,
+ * jest umiejscowiony względny wskaźnik do następnego wolnego bloku z danej
+ * klasy, jeśli takiego nie ma to jest zapisana tam wartość 0 -ostatnie 4 bajty
+ * danego bloku są przeznaczone na footer(drugi nagłówek)
  *
  * wysokopoziomowy opis działania przydziału bloku:
  * procedura malloc najpierw spróbuje znaleźć wolny blok wymaganego rozmiary w
@@ -190,9 +190,9 @@ static inline void set_next_free_block(word_t *block, word_t *next_free_block) {
   if (block == NULL)
     return;
   if (next_free_block == NULL)
-    *(block + 2) = -1;
+    *(block + 2) = 0;
   else
-    *(block + 2) = next_free_block - heap_start;
+    *(block + 2) = next_free_block - block;
 }
 /* Ustawia wskaźnik w bieżącym wolnym bloku na poprzedni wolny blok należący do
   wspólnej klasy */
@@ -200,33 +200,33 @@ static inline void set_prev_free_block(word_t *block, word_t *prev_free_block) {
   if (block == NULL)
     return;
   if (prev_free_block == NULL)
-    *(block + 1) = -1;
+    *(block + 1) = 0;
   else
-    *(block + 1) = prev_free_block - heap_start;
+    *(block + 1) = prev_free_block - block;
 }
 /* Pobiera wskaznik na następny wolny blok z klasy względem bieżacego bloku */
 static inline word_t *get_next_free_block(word_t *block) {
   word_t relative_adress = *(block + 2);
-  if (relative_adress == -1)
+  if (relative_adress == 0)
     return NULL;
   else
-    return (unsigned long)relative_adress + heap_start;
+    return relative_adress + block;
 }
 /* Pobiera wskaznik na poprzedni wolny blok z klasy względem bieżacego bloku */
 static inline word_t *get_prev_free_block(word_t *block) {
   word_t relative_adress = *(block + 1);
-  if (relative_adress == -1)
+  if (relative_adress == 0)
     return NULL;
   else
-    return (unsigned long)relative_adress + heap_start;
+    return relative_adress + block;
 }
 /* Pobiera pierwszy wolny blok z danej klasy */
 static inline word_t *get_first_free_block_from_class(word_t *class) {
   word_t relative_adress = *class;
-  if (relative_adress == -1)
+  if (relative_adress == 0)
     return NULL;
   else
-    return heap_start + (unsigned long)relative_adress;
+    return class + relative_adress;
 }
 /* Wkłada wolny blok do określonej za pomocą set_class_to_insert_free_block
  * klasy w porządku rosnącym względem rozmiaru */
@@ -238,14 +238,14 @@ static inline void insert_free_block_to_segregated_list(word_t *block) {
     /* klasa jest pusta, wkładamy wolny blok na początek klasy */
     set_prev_free_block(block, NULL);
     set_next_free_block(block, NULL);
-    *class = block - heap_start;
+    *class = block - class;
   } else if (size_inserted_block <= bt_size(head_list)) {
     /* głowa klasy ma rozmiar większy od wkładanego bloku, dlatego wkładamy blok
      * na początek klasy */
     set_prev_free_block(block, NULL);
     set_prev_free_block(head_list, block);
     set_next_free_block(block, head_list);
-    *class = block - heap_start;
+    *class = block - class;
   } else {
     /* szukamy iteracyjnie docelowego miejsca dla danego wolnego bloku */
     word_t *curr_block = head_list;
@@ -267,9 +267,9 @@ static inline word_t *pop_free_block_from_class(word_t *class) {
     word_t *next_free_block_from_class =
       get_next_free_block(get_first_free_block_from_class(class));
     if (next_free_block_from_class == NULL)
-      *class = -1;
+      *class = 0;
     else
-      *class = next_free_block_from_class - heap_start;
+      *class = (next_free_block_from_class - class) /* /sizeof(word_t) */;
     set_prev_free_block(get_first_free_block_from_class(class), NULL);
   }
   return first_free_block_from_class;
@@ -377,11 +377,11 @@ static inline word_t *take_free_block_from_segregated_list(size_t size) {
   }
   return NULL;
 }
-/* inicjujemy wskazniki w klasach wartością null(-1). Używamy tu adresów
+/* inicjujemy wskazniki w klasach wartością null(0). Używamy tu adresów
  * względnych */
 static inline void init_segredated_list() {
   for (int i = 0; i < classes; i++)
-    *(segregated_list + i) = -1;
+    *(segregated_list + i) = 0;
 }
 /* powiększa stertę o wymagany rozmiar pamięci.*/
 static inline void *morecore(size_t size) {
