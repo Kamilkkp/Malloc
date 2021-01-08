@@ -644,15 +644,13 @@ void mm_checkheap(int verbose) {
   // pierwszy i ostatni blok zawierają się w przestrzeni sterty:
   if (heap_start != NULL &&
       !((void *)heap_start >= mem_heap_lo() &&
-        (void *)heap_start + bt_size(heap_start) - 1 <= mem_heap_hi() &&
-        bt_get_prevfree(heap_start) != PREVFREE)) {
+        (void *)heap_start + bt_size(heap_start) - 1 <= mem_heap_hi())) {
     printf("blok pierwszy (heap_start) nie zawiera się w obszarze sterty\n");
     list_the_contents_of_the_heap();
     exit(0);
   }
   if (last != NULL && !((void *)last >= mem_heap_lo() &&
-                        (void *)last + bt_size(last) - 1 <= mem_heap_hi() &&
-                        bt_next(last) == NULL)) {
+                        (void *)last + bt_size(last) - 1 <= mem_heap_hi())) {
     printf("blok ostatni (last) nie zawiera się w obszarze sterty\n");
     list_the_contents_of_the_heap();
     exit(0);
