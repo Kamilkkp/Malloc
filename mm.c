@@ -641,6 +641,36 @@ static inline void list_the_contents_of_the_heap() {
 }
 void mm_checkheap(int verbose) {
 
+  // pierwszy i ostatni blok zawierają się w przestrzeni sterty:
+  if (heap_start != NULL &&
+      !((void *)heap_start >= mem_heap_lo() &&
+        (void *)heap_start + bt_size(heap_start) - 1 <= mem_heap_hi() &&
+        bt_get_prevfree(heap_start) != PREVFREE)) {
+    printf("blok pierwszy (heap_start) nie zawiera się w obszarze sterty\n");
+    list_the_contents_of_the_heap();
+    exit(0);
+  }
+  if (last != NULL && !((void *)last >= mem_heap_lo() &&
+                        (void *)last + bt_size(last) - 1 <= mem_heap_hi() &&
+                        bt_next(last) == NULL)) {
+    printf("blok ostatni (last) nie zawiera się w obszarze sterty\n");
+    list_the_contents_of_the_heap();
+    exit(0);
+  }
+
+  // pierwszy i ostatni blok są rzeczywisćie pierwszym i ostatnim blokiem na
+  // stercie:
+  if (heap_start != NULL && !(bt_get_prevfree(heap_start) != PREVFREE)) {
+    printf("pierwszy blok (heapstart) nie jest pierwszym blokiem");
+    list_the_contents_of_the_heap();
+    exit(0);
+  }
+  if (heap_start != NULL && !(bt_next(last) == NULL)) {
+    printf("ostatni blok (last) nie jest ostatnim blokiem");
+    list_the_contents_of_the_heap();
+    exit(0);
+  }
+
   // Każdy blok na liście wolnych bloków jest oznaczony jako wolny:
   word_t *class = segregated_list;
   word_t *block = get_first_free_block_from_class(class);
