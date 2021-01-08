@@ -260,7 +260,7 @@ static inline void insert_free_block_to_segregated_list(word_t *block) {
     set_next_free_block(curr_block, block);
   }
 }
-/* Zwraca pierwszy wolny blok z danej klasy oraz go usuwa z niej. */
+/* Zwraca pierwszy wolny blok z danej klasy oraz go usuwa z niej */
 static inline word_t *pop_free_block_from_class(word_t *class) {
   word_t *first_free_block_from_class = get_first_free_block_from_class(class);
   if (first_free_block_from_class != NULL) {
@@ -355,8 +355,7 @@ static inline word_t *take_free_block_from_class(word_t *class, size_t size) {
     if (block != NULL && bt_size(block) > size) {
       /* Jeśli jest większy niż znaleziony to ustawia dany blok jako używany, a
        * następnie uruchamia na nim split*/
-      // set_free_block_from_segregated_list_as_used(block);
-      remove_free_block_from_segregated_list(block);
+      set_free_block_from_segregated_list_as_used(block);
       return split(block, size);
     } else if (block != NULL)
       block = get_next_free_block(block);
@@ -444,8 +443,7 @@ void *malloc(size_t size) {
   size_t size_last = bt_size(last);
   if (size_last > size) { /*  ostatni blok jest wolny i romiaru większego -
              uruchamiamy split na nim i zwracmy blok użytkownikowi */
-    // set_free_block_from_segregated_list_as_used(last);
-    remove_free_block_from_segregated_list(last);
+    set_free_block_from_segregated_list_as_used(last);
     block = split(last, size);
   } else if (size_last == size) { /* jeśli ostatni blok jest równy i wolny
                                       od szukanego, rejestrujemy jesgo użycie
